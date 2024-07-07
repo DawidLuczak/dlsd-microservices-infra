@@ -1,0 +1,103 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-deployment
+  namespace: default
+  labels:
+    app: account-deployment
+spec:
+  selector:
+    matchLabels:
+      app: account-deployment
+  template:
+    metadata:
+      labels:
+        app: account-deployment
+    spec:
+      containers:
+        - name: account-service
+          image: pl.dlsd/account.service:1.0-SNAPSHOT
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:1111/postgres?currentSchema=profile&binaryTransfer=true&reWriteBatchedInserts=true&stringtype=unspecified"
+            - name: KAFKA-CONFIG_BOOTSTRAP-SERVERS
+              value: "local-confluent-kafka-cp-kafka-headless:9092"
+            - name: KAFKA-CONFIG_SCHEMA-REGISTRY-URL
+              value: "http://local-confluent-kafka-cp-schema-registry:8081"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "1024Mi"
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service
+  namespace: default
+  labels:
+    app: account-service
+spec:
+  selector:
+    app: account-deployment
+  ports:
+    - name: account-service-port
+      protocol: TCP
+      port: 8181
+  type: LoadBalancer
+  loadBalancerIP: ""
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile-deployment
+  namespace: default
+  labels:
+    app: profile-deployment
+spec:
+  selector:
+    matchLabels:
+      app: profile-deployment
+  template:
+    metadata:
+      labels:
+        app: profile-deployment
+    spec:
+      containers:
+        - name: profile-service
+          image: pl.dlsd/profile.service:1.0-SNAPSHOT
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:1111/postgres?currentSchema=profile&binaryTransfer=true&reWriteBatchedInserts=true&stringtype=unspecified"
+            - name: KAFKA-CONFIG_BOOTSTRAP-SERVERS
+              value: "local-confluent-kafka-cp-kafka-headless:9092"
+            - name: KAFKA-CONFIG_SCHEMA-REGISTRY-URL
+              value: "http://local-confluent-kafka-cp-schema-registry:8081"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "1024Mi"
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-service
+  namespace: default
+  labels:
+    app: profile-service
+spec:
+  selector:
+    app: profile-deployment
+  ports:
+    - name: profile-service-port
+      protocol: TCP
+      port: 8182
+  type: LoadBalancer
+  loadBalancerIP: ""
